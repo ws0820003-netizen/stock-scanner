@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+yfinance
+requests
+urllib3
+pymongo
+dnspython
