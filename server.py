@@ -6,7 +6,9 @@ import uvicorn
 import requests
 import urllib3
 import os
-import threading  # 💡 引入執行緒套件
+import threading
+import time  # 💡 新增：用來休息，避免被 Yahoo 封鎖
+import gc    # 💡 新增：用來倒垃圾，釋放記憶體
 
 # 關閉煩人的 HTTPS 憑證警告
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -21,10 +23,10 @@ app.add_middleware(
 )
 
 stock_cache = {}
-is_data_ready = False  # 💡 新增一個狀態開關，紀錄資料是否抓完
+is_data_ready = False
 
 # ==========================================
-# 💾 核心下載邏輯 (改為在背景執行)
+# 💾 核心下載邏輯 (安全休閒模式)
 # ==========================================
 def load_data_background():
     global is_data_ready
@@ -42,14 +44,15 @@ def load_data_background():
 
     stock_list = twse_list + tpex_list 
     print(f"✅ 成功取得 {len(stock_list)} 檔股票代號！")
-    print(f"\n⏳ 步驟 2：啟動「批次下載模式」，向 Yahoo Finance 索取資料...")
+    print(f"\n⏳ 步驟 2：啟動「安全休閒模式」，向 Yahoo Finance 索取資料...")
     
-    chunk_size = 100
+    chunk_size = 50  # 💡 縮小批次，每 50 檔抓一次
     success_count = 0
     
     for i in range(0, len(stock_list), chunk_size):
         chunk = stock_list[i:i + chunk_size]
         try:
+            # 加上 timeout 避免無限卡住
             df = yf.download(chunk, period="6mo", progress=False)
             if df.empty or 'Close' not in df:
                 continue
@@ -66,6 +69,12 @@ def load_data_background():
                         norm_prices = [(p - min_p) / (max_p - min_p) if max_p != min_p else 0 for p in prices]
                         stock_cache[ticker] = {"raw": prices, "norm": norm_prices}
                         success_count += 1
+            
+            # 💡 終極防護機制：強制清空記憶體 + 喘息 1.5 秒鐘
+            del df
+            gc.collect()
+            time.sleep(1.5)
+
         except Exception:
             pass
             
@@ -73,25 +82,20 @@ def load_data_background():
         print(f"  ...下載進度: {current}/{len(stock_list)} (已成功庫存: {success_count} 檔)")
 
     print(f"\n🚀 霸氣全開！全市場資料庫建立完成，共就緒 {len(stock_cache)} 檔股票。")
-    is_data_ready = True  # 💡 資料抓完了，打開開關！
+    is_data_ready = True
 
 # ==========================================
-# 💾 伺服器啟動事件 (秒速開機)
+# 伺服器啟動與 API 設定 (維持不變)
 # ==========================================
 @app.on_event("startup")
 def startup_event():
     print("✅ 伺服器秒速開機成功！Port 已綁定。準備在背景偷偷下載資料...")
-    # 💡 派一個分身去執行下載，主程式不用等，直接開門接客！
     threading.Thread(target=load_data_background).start()
 
-# ==========================================
-# 🧠 AI 比對核心 API
-# ==========================================
 @app.post("/api/scan")
 async def scan_pattern(request: Request):
-    # 💡 攔截機制：如果網頁太早按掃描，提醒他還在下載
     if not is_data_ready:
-        return {"status": "error", "message": "雲端大腦剛起床，正在背景努力下載全台股資料（約需 2~3 分鐘），請稍後再按一次掃描！"}
+        return {"status": "error", "message": "雲端大腦剛起床，正在背景努力下載全台股資料（為避免當機已開啟安全模式，約需 5 分鐘），請稍後再按一次掃描！"}
 
     data = await request.json()
     user_pattern = data.get("pattern", [])
