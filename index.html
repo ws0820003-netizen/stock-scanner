@@ -8,7 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #131722; color: #d1d4dc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-        canvas.drawing-board { cursor: crosshair; background-image: linear-gradient(rgba(42, 46, 57, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(42, 46, 57, 0.5) 1px, transparent 1px); background-size: 20px 20px; background-position: center center; }
+        /* 💡 加上了 touch-action: none; 防止手機畫圖時畫面跟著滑動 */
+        canvas.drawing-board { cursor: crosshair; background-image: linear-gradient(rgba(42, 46, 57, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(42, 46, 57, 0.5) 1px, transparent 1px); background-size: 20px 20px; background-position: center center; touch-action: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #1e222d; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 4px; }
@@ -274,6 +275,34 @@
                 }
             });
         }
+
+        // === 📱 手機觸控支援魔法代碼 ===
+        canvas.addEventListener("touchstart", function (e) {
+            e.preventDefault();
+            let touch = e.touches[0];
+            let mouseEvent = new MouseEvent("mousedown", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }, { passive: false });
+
+        canvas.addEventListener("touchmove", function (e) {
+            e.preventDefault();
+            let touch = e.touches[0];
+            let mouseEvent = new MouseEvent("mousemove", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }, { passive: false });
+
+        canvas.addEventListener("touchend", function (e) {
+            e.preventDefault();
+            let mouseEvent = new MouseEvent("mouseup", {});
+            canvas.dispatchEvent(mouseEvent);
+        }, { passive: false });
+        // ==========================================
     </script>
 </body>
 </html>
