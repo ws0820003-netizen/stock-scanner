@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 import uvicorn
 import os
+import certifi
 
 app = FastAPI()
 
@@ -21,7 +22,7 @@ import os
 MONGO_URI = os.environ.get("MONGO_URI")
 
 print("🔌 正在連線至雲端大冰箱...")
-client = MongoClient(MONGO_URI, server_api=ServerApi('1'))
+client = MongoClient(MONGO_URI, server_api=ServerApi('1'), tlsCAFile=certifi.where())
 db = client['StockScanner']
 collection = db['StockData']
 print("✅ 冰箱連線成功！")
