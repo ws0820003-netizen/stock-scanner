@@ -123,6 +123,10 @@ async def scan_pattern(request: Request):
 # ==========================================
 # 啟動伺服器
 # ==========================================
+import os
+
 if __name__ == "__main__":
-    print("🚀 啟動 Python API 伺服器...")
-    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)
+    # 讓程式自動抓取 Render 分配的 Port，如果抓不到就預設 8000
+    port = int(os.environ.get("PORT", 8000))
+    print(f"🚀 啟動 Python API 伺服器於 Port {port}...")
+    uvicorn.run("server:app", host="0.0.0.0", port=port)
