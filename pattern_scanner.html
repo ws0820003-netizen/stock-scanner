@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手繪型態選股神器 - 全市場掃描版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #131722; color: #d1d4dc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        canvas.drawing-board { cursor: crosshair; background-image: linear-gradient(rgba(42, 46, 57, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(42, 46, 57, 0.5) 1px, transparent 1px); background-size: 20px 20px; background-position: center center; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e222d; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #434651; }
+        .glass-panel { background: #1e222d; border: 1px solid #2a2e39; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+    <header class="bg-[#1e222d] border-b border-[#2a2e39] p-4 flex justify-between items-center z-10">
+        <div class="flex items-center space-x-3">
+            <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+            <h1 class="text-xl font-bold text-white tracking-wider">手繪型態選股神器 <span class="text-xs text-green-400 border border-green-400 px-2 py-0.5 rounded ml-2">Top 10 極速版</span></h1>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <section class="w-1/2 p-6 flex flex-col border-r border-[#2a2e39]">
+            <div class="mb-4 flex justify-between items-end">
+                <div>
+                    <h2 class="text-lg font-semibold text-white mb-1">1. 繪製理想型態</h2>
+                    <p class="text-sm text-gray-400">在下方畫布按住滑鼠從左拖曳到右，畫出想要的走勢（如 W底）。</p>
+                </div>
+                <div class="space-x-2">
+                    <button id="clearBtn" class="px-4 py-2 bg-[#2a2e39] hover:bg-[#434651] text-white rounded text-sm transition-colors">清除重畫</button>
+                    <button id="scanBtn" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded text-sm transition-colors shadow-lg shadow-blue-500/30">🔍 送出比對</button>
+                </div>
+            </div>
+            <div class="flex-1 relative rounded-lg overflow-hidden border-2 border-[#2a2e39] bg-[#131722]">
+                <canvas id="drawCanvas" class="drawing-board w-full h-full block"></canvas>
+            </div>
+        </section>
+
+        <section class="w-1/2 bg-[#131722] p-6 flex flex-col">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold text-white mb-1">2. 掃描結果 (Top 10 相似度排行)</h2>
+                <p class="text-sm text-gray-400">呼叫本機 Python 運算，比對全台股真實 60 日 K 線。</p>
+            </div>
+
+            <div id="loadingState" class="hidden flex-1 flex flex-col items-center justify-center">
+                <div class="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+                <p class="text-blue-400 animate-pulse text-lg">全市場 1800 檔 AI 比對中...</p>
+            </div>
+
+            <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-gray-500">
+                <svg class="w-20 h-20 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                <p>請先在左側畫出圖形，並點擊掃描。</p>
+            </div>
+
+            <div id="resultsList" class="flex-1 overflow-y-auto custom-scrollbar pr-2 hidden space-y-4"></div>
+        </section>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const clearBtn = document.getElementById('clearBtn');
+        const scanBtn = document.getElementById('scanBtn');
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        const resultsList = document.getElementById('resultsList');
+
+        let isDrawing = false;
+        let points = [];
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            redraw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            points = [];
+            const pos = getMousePos(e);
+            points.push(pos);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            emptyState.classList.remove('hidden');
+            resultsList.classList.add('hidden');
+            resultsList.innerHTML = '';
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getMousePos(e);
+            const lastPoint = points[points.length - 1];
+            if (pos.x > lastPoint.x + 2) { 
+                points.push(pos);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.strokeStyle = '#2962ff';
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+            }
+        }
+
+        function stopDrawing() { isDrawing = false; }
+
+        function redraw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (points.length === 0) return;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.strokeStyle = '#2962ff';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        }
+
+        clearBtn.addEventListener('click', () => {
+            points = [];
+            redraw();
+            emptyState.classList.remove('hidden');
+            resultsList.classList.add('hidden');
+        });
+
+        function getNormalizedPattern() {
+            if (points.length < 5) return null;
+            const minX = points[0].x;
+            const maxX = points[points.length - 1].x;
+            const width = maxX - minX;
+            const numPoints = 60; // 60 個資料點
+            const normalizedY = [];
+            
+            for (let i = 0; i < numPoints; i++) {
+                const targetX = minX + (width * i / (numPoints - 1));
+                let left = points[0], right = points[points.length - 1];
+                for (let j = 0; j < points.length - 1; j++) {
+                    if (points[j].x <= targetX && points[j+1].x >= targetX) {
+                        left = points[j]; right = points[j+1]; break;
+                    }
+                }
+                let y = (right.x === left.x) ? left.y : left.y + ((targetX - left.x) / (right.x - left.x)) * (right.y - left.y);
+                normalizedY.push(y);
+            }
+
+            const minY = Math.min(...normalizedY);
+            const maxY = Math.max(...normalizedY);
+            const range = maxY - minY || 1;
+            return normalizedY.map(y => 1 - ((y - minY) / range));
+        }
+
+        scanBtn.addEventListener('click', async () => {
+            const pattern = getNormalizedPattern();
+            if (!pattern) {
+                alert('請先在左側畫出一段走勢趨勢！(由左至右拖曳)');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            resultsList.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+
+            try {
+                const response = await fetch('https://my-stock-scanner-api.onrender.com/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pattern: pattern })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status !== 'success') {
+                    throw new Error(data.message);
+                }
+
+                loadingState.classList.add('hidden');
+                resultsList.innerHTML = '';
+
+                data.matches.forEach((stock, index) => {
+                    createResultCard(stock.code, stock.name, stock.score, stock.prices, index);
+                });
+                
+                resultsList.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("API 連線失敗:", error);
+                alert("無法連線到 Python 伺服器！請確認 server.py 已經在 VS Code 執行中。");
+                loadingState.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            }
+        });
+
+        function createResultCard(code, name, score, priceData, index) {
+            const card = document.createElement('div');
+            card.className = 'glass-panel rounded-lg p-4 transition-transform hover:-translate-y-1 hover:shadow-lg border border-[#2a2e39] hover:border-[#434651]';
+            const canvasId = `chart-${index}`;
+            const isHighMatch = score > 75;
+            
+            card.innerHTML = `
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-baseline space-x-2">
+                        <span class="text-lg font-bold text-white">${code}</span>
+                        <span class="text-sm text-gray-400">${name}</span>
+                    </div>
+                    <div class="flex items-center bg-[#2a2e39] px-3 py-1 rounded-full border ${isHighMatch ? 'border-green-500/50' : 'border-[#434651]'}">
+                        <span class="text-xs text-gray-400 mr-2">相似度</span>
+                        <span class="text-sm font-bold ${isHighMatch ? 'text-green-400' : 'text-yellow-400'}">${score}%</span>
+                    </div>
+                </div>
+                <div class="h-32 w-full relative">
+                    <canvas id="${canvasId}"></canvas>
+                </div>
+                <div class="mt-3 flex justify-between items-center">
+                    <span class="text-xs text-gray-500">真實走勢: 最近 60 日</span>
+                    <span class="text-xs text-blue-400">目前收盤: $${priceData[priceData.length-1].toFixed(2)}</span>
+                </div>
+            `;
+            
+            resultsList.appendChild(card);
+            
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 150);
+            const color = isHighMatch ? 'rgba(41, 98, 255, ' : 'rgba(156, 163, 175, ';
+            gradient.addColorStop(0, color + '0.2)');
+            gradient.addColorStop(1, color + '0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: priceData.length}, (_, i) => `T-${priceData.length - i}`),
+                    datasets: [{
+                        data: priceData,
+                        borderColor: isHighMatch ? '#2962ff' : '#9ca3af',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        fill: true,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { 
+                            display: true, position: 'right',
+                            grid: { color: '#2a2e39', drawBorder: false },
+                            ticks: { color: '#6b7280', font: { size: 10 } }
+                        }
+                    },
+                    interaction: { mode: 'index', intersect: false }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
