@@ -7,86 +7,106 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #0b0e14; color: #d1d4dc; font-family: sans-serif; }
+        body { background-color: #0b0e14; color: #d1d4dc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         canvas.drawing-board { cursor: crosshair; background-color: #131722; touch-action: none; border-radius: 12px; }
-        .tab-btn.active { background-color: #2962ff; color: white; }
+        .tab-btn { border: 1px solid #2a2e39; color: #787b86; }
+        .tab-btn.active { background-color: #2962ff; color: white; border-color: #2962ff; }
         .glass-panel { background: #131722; border: 1px solid #2a2e39; transition: all 0.2s; }
         .glass-panel:hover { border-color: #434651; transform: translateY(-2px); }
-        select { background-color: #1e222d; border: 1px solid #2a2e39; color: white; padding: 10px; border-radius: 8px; width: 100%; outline: none; }
+        select { background-color: #1e222d; border: 1px solid #2a2e39; color: white; padding: 10px; border-radius: 8px; width: 100%; outline: none; appearance: none; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 10px; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
     <header class="p-4 bg-[#131722] border-b border-[#2a2e39] flex justify-between items-center shadow-xl">
-        <h1 class="text-xl font-bold flex items-center"><span class="text-blue-500 mr-2">📈</span> AI 智能選股終端機</h1>
+        <div class="flex items-center">
+            <span class="text-2xl mr-2">📈</span>
+            <h1 class="text-xl font-bold tracking-tight">AI 智能選股終端機 <span class="text-xs text-blue-500 font-normal ml-2">v4.1 Pro</span></h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span id="conn-status" class="text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full font-bold uppercase tracking-widest">System Ready</span>
+        </div>
     </header>
 
     <main class="flex-1 flex overflow-hidden">
-        <section class="w-full md:w-1/2 p-6 flex flex-col border-r border-[#2a2e39] bg-[#0b0e14] z-10">
+        <section class="w-full md:w-1/2 p-6 flex flex-col border-r border-[#2a2e39] bg-[#0b0e14] z-10 shadow-2xl">
             <div class="flex space-x-2 mb-6">
-                <button onclick="switchTab('draw')" id="btn-tab-draw" class="tab-btn active flex-1 py-3 rounded-lg font-bold transition-all border border-[#2a2e39]">🖍️ 手繪型態</button>
-                <button onclick="switchTab('volume')" id="btn-tab-volume" class="tab-btn flex-1 py-3 rounded-lg font-bold transition-all border border-[#2a2e39]">🚀 底部爆量</button>
+                <button onclick="switchTab('draw')" id="btn-tab-draw" class="tab-btn active flex-1 py-3 rounded-lg font-bold transition-all">🖍️ 手繪型態</button>
+                <button onclick="switchTab('volume')" id="btn-tab-volume" class="tab-btn flex-1 py-3 rounded-lg font-bold transition-all">🚀 底部爆量</button>
             </div>
 
             <div class="mb-6 p-4 bg-[#131722] rounded-xl border border-[#2a2e39]">
-                <label class="text-[11px] text-blue-400 block mb-2 font-black uppercase tracking-widest">Industry 產業過濾</label>
-                <select id="industrySelect">
-                    <option value="全部">🌐 全部產業 (All Market)</option>
-                    <option value="半導體業">🔌 半導體業</option>
-                    <option value="電腦及週邊設備業">💻 電腦週邊</option>
-                    <option value="電子零組件業">📦 電子零組件</option>
-                    <option value="光電業">💡 光電業</option>
-                    <option value="通信網路業">📡 通信網路</option>
-                    <option value="電子通路業">🏬 電子通路</option>
-                    <option value="資訊服務業">☁️ 資訊服務</option>
-                    <option value="電機機械">🛠️ 電機機械</option>
-                    <option value="航運業">🚢 航運業</option>
-                    <option value="金融業">💰 金融保險</option>
-                    <option value="建材營造">🏠 建材營造</option>
-                    <option value="生技醫療業">🧬 生技醫療</option>
-                    <option value="其他">❓ 其他類別</option>
-                </select>
+                <label class="text-[11px] text-blue-400 block mb-2 font-black uppercase tracking-widest">Industry Filter 產業過濾</label>
+                <div class="relative">
+                    <select id="industrySelect">
+                        <option value="全部">🌐 全部產業 (All Market)</option>
+                        <option value="半導體業">🔌 半導體業</option>
+                        <option value="電腦及週邊設備業">💻 電腦週邊</option>
+                        <option value="電子零組件業">📦 電子零組件</option>
+                        <option value="光電業">💡 光電業</option>
+                        <option value="通信網路業">📡 通信網路</option>
+                        <option value="電子通路業">🏬 電子通路</option>
+                        <option value="資訊服務業">☁️ 資訊服務</option>
+                        <option value="電機機械">🛠️ 電機機械</option>
+                        <option value="航運業">🚢 航運業</option>
+                        <option value="金融業">💰 金融保險</option>
+                        <option value="建材營造">🏠 建材營造</option>
+                        <option value="生技醫療業">🧬 生技醫療</option>
+                        <option value="其他">❓ 其他類別</option>
+                    </select>
+                </div>
             </div>
 
             <div id="content-draw" class="flex-1 flex flex-col">
                 <div class="mb-2 flex justify-between items-end">
-                    <span class="text-sm font-bold text-gray-400">在下方畫出預期走勢：</span>
-                    <button id="clearBtn" class="text-xs text-red-400 hover:text-red-300 transition-colors">清除畫布</button>
+                    <span class="text-sm font-bold text-[#787b86]">繪製預期走勢 (K線 60日)：</span>
+                    <button id="clearBtn" class="text-xs text-red-400 hover:text-red-300 transition-colors font-bold uppercase">Clear 清除</button>
                 </div>
-                <div class="flex-1 mb-6">
-                    <canvas id="drawCanvas" class="drawing-board w-full h-full shadow-inner"></canvas>
+                <div class="flex-1 mb-6 relative">
+                    <canvas id="drawCanvas" class="drawing-board w-full h-full shadow-inner border border-[#2a2e39]"></canvas>
                 </div>
-                <button onclick="scanDrawing()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg">🔍 執行全市場比對</button>
+                <button onclick="scanDrawing()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg shadow-blue-900/20">🔍 執行全市場形態比對</button>
             </div>
 
             <div id="content-volume" class="flex-1 flex flex-col hidden">
-                <div class="p-8 bg-[#131722] rounded-2xl border border-[#2a2e39] mb-6 shadow-2xl">
-                    <h2 class="text-xl font-bold mb-6 text-red-500 flex items-center">🔥 爆量反轉策略</h2>
-                    <ul class="space-y-4 text-gray-300">
-                        <li class="flex items-center"><span class="bg-green-500/20 text-green-500 p-1 rounded mr-3">✔</span> 今日收盤價 > 昨日收盤價</li>
-                        <li class="flex items-center"><span class="bg-green-500/20 text-green-500 p-1 rounded mr-3">✔</span> 成交量 > 10日均量 2.5 倍</li>
-                        <li class="flex items-center"><span class="bg-green-500/20 text-green-500 p-1 rounded mr-3">✔</span> 日成交量需大於 1,000 張</li>
+                <div class="p-8 bg-[#131722] rounded-2xl border border-[#2a2e39] mb-6 shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">📊</div>
+                    <h2 class="text-xl font-bold mb-6 text-red-500 flex items-center">🔥 爆量反轉選股策略</h2>
+                    <ul class="space-y-4 text-gray-300 font-medium">
+                        <li class="flex items-center"><span class="bg-green-500/20 text-green-500 p-1 rounded-full mr-3 text-[10px]">✔</span> 今日收紅 K (收盤 > 昨日)</li>
+                        <li class="flex items-center"><span class="bg-green-500/20 text-green-500 p-1 rounded-full mr-3 text-[10px]">✔</span> 成交量 > 10日均量 2.5 倍以上</li>
+                        <li class="flex items-center"><span class="bg-green-500/20 text-green-500 p-1 rounded-full mr-3 text-[10px]">✔</span> 單日成交量大於 1,000 張</li>
                     </ul>
                 </div>
-                <button onclick="scanVolumeSurge()" class="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg">🚀 啟動爆量掃描</button>
+                <button onclick="scanVolumeSurge()" class="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg shadow-red-900/20">🚀 啟動底部爆量掃描</button>
             </div>
         </section>
 
         <section class="hidden md:flex w-1/2 p-6 flex-col bg-[#0b0e14]">
-            <h2 class="text-lg font-bold mb-4 border-b border-[#2a2e39] pb-2 text-white">掃描結果 (Top Matches)</h2>
+            <h2 class="text-lg font-bold mb-4 border-b border-[#2a2e39] pb-2 text-white flex justify-between items-center">
+                掃描結果 (Matching Results)
+                <span id="resultCount" class="text-xs font-normal text-gray-500"></span>
+            </h2>
+            
             <div id="loadingState" class="hidden flex-1 flex flex-col items-center justify-center">
                 <div class="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-                <p class="text-blue-400 font-bold animate-pulse">大腦運算中...</p>
+                <p class="text-blue-400 font-bold animate-pulse tracking-widest uppercase text-xs">Processing Data...</p>
             </div>
-            <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-gray-600">
-                <p class="text-4xl mb-4">🔭</p>
-                <p>等待指令中...</p>
+
+            <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-gray-700">
+                <p class="text-6xl mb-6 grayscale opacity-20">📈</p>
+                <p class="text-sm font-bold">請在左側執行掃描指令</p>
             </div>
+
             <div id="resultsList" class="flex-1 overflow-y-auto space-y-4 hidden pr-2"></div>
         </section>
     </main>
 
     <script>
-        const API_BASE_URL = 'https://my-stock-scanner-api.onrender.com' // 💡 記得換成你的 Render 網址
+        // 💡 修改重點：確保這行網址與你 Render 後台一致，結尾不要有 /
+        const API_BASE_URL = 'https://my-stock-scanner-api.onrender.com'; 
+
         const canvas = document.getElementById('drawCanvas');
         const ctx = canvas.getContext('2d');
         let isDrawing = false, points = [];
@@ -103,6 +123,7 @@
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width; canvas.height = rect.height;
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         }
         window.addEventListener('resize', resizeCanvas); resizeCanvas();
 
@@ -122,7 +143,7 @@
             const pos = getPos(e);
             if (pos.x > points[points.length-1].x + 2) {
                 points.push(pos); ctx.lineTo(pos.x, pos.y);
-                ctx.strokeStyle = '#2962ff'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.stroke();
+                ctx.strokeStyle = '#2962ff'; ctx.lineWidth = 4; ctx.stroke();
             }
         }
         window.addEventListener('mouseup', () => isDrawing = false);
@@ -130,7 +151,7 @@
 
         async function scanDrawing() {
             const industry = document.getElementById('industrySelect').value;
-            if (points.length < 5) return alert('請先畫出走勢！');
+            if (points.length < 5) return alert('請先在畫布上畫出一段趨勢！');
             callAPI('/scan', { pattern: getNormalizedPattern(), industry }, 'draw');
         }
 
@@ -143,21 +164,37 @@
             document.getElementById('emptyState').classList.add('hidden');
             document.getElementById('resultsList').classList.add('hidden');
             document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('conn-status').innerText = "Processing...";
+            document.getElementById('conn-status').className = "text-[10px] bg-blue-500/20 text-blue-500 px-2 py-1 rounded-full font-bold";
+
             try {
                 const res = await fetch(API_BASE_URL + endpoint, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(body)
                 });
-                renderResults(await res.json(), type);
-            } catch (e) { alert('連線失敗！請確認 Render 服務已啟動'); }
+                
+                if (!res.ok) throw new Error(`Status: ${res.status}`);
+                
+                const data = await res.json();
+                renderResults(data, type);
+                
+                document.getElementById('conn-status').innerText = "System Ready";
+                document.getElementById('conn-status').className = "text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full font-bold";
+            } catch (e) { 
+                console.error(e);
+                alert('連線失敗！請檢查：\n1. Render 網址是否正確\n2. Render 是否已啟動(Live)\n3. 網路連線'); 
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('emptyState').classList.remove('hidden');
+            }
         }
 
         function renderResults(data, type) {
             document.getElementById('loadingState').classList.add('hidden');
             const list = document.getElementById('resultsList');
             list.innerHTML = '';
+            
             if (!data.matches || data.matches.length === 0) {
-                list.innerHTML = '<div class="p-10 text-center text-gray-500">此條件下找不到符合標的</div>';
+                list.innerHTML = '<div class="p-10 text-center text-gray-500 font-bold">⚠️ 此過濾條件下找不到符合標的</div>';
             } else {
                 data.matches.forEach((s, i) => {
                     const card = document.createElement('div');
@@ -172,21 +209,41 @@
                                 <div class="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-widest">${s.industry}</div>
                             </div>
                             <div class="text-right">
-                                <div class="text-xs text-gray-500 font-bold">${type==='draw'?'相似度':'量增倍數'}</div>
+                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">${type==='draw'?'Similarity':'Vol Multiplier'}</div>
                                 <div class="text-lg font-black ${type==='volume'?'text-red-500':'text-green-400'}">${s.score}${type==='draw'?'%':'x'}</div>
                             </div>
                         </div>
                         <div class="h-32 w-full mb-3"><canvas id="c-${i}"></canvas></div>
-                        <div class="flex justify-between items-center text-[11px]">
-                            <span class="text-gray-500">60-Day Trend</span>
-                            <span class="font-mono text-white bg-[#1e222d] px-2 py-1 rounded">CLOSE: $${s.prices[s.prices.length-1].toFixed(2)}</span>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="text-gray-500 font-bold">60-DAY HISTORICAL TREND</span>
+                            <span class="font-mono text-white bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">LAST CLOSE: $${s.prices[s.prices.length-1].toFixed(2)}</span>
                         </div>
                     `;
                     list.appendChild(card);
+                    
                     new Chart(document.getElementById(`c-${i}`), {
                         type: 'line',
-                        data: { labels: s.prices.map((_,idx)=>idx), datasets: [{ data: s.prices, borderColor: type==='volume'?'#ef4444':'#2962ff', borderWidth: 3, pointRadius: 0, fill: false, tension: 0.1 }] },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { position: 'right', grid: { color: '#2a2e39' }, ticks: { color: '#434651', font: { size: 9 } } } } }
+                        data: { 
+                            labels: s.prices.map((_,idx)=>idx), 
+                            datasets: [{ 
+                                data: s.prices, 
+                                borderColor: type==='volume'?'#ef4444':'#2962ff', 
+                                borderWidth: 2.5, 
+                                pointRadius: 0, 
+                                fill: true,
+                                backgroundColor: type==='volume'?'rgba(239, 68, 68, 0.05)':'rgba(41, 98, 255, 0.05)',
+                                tension: 0.1 
+                            }] 
+                        },
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            plugins: { legend: { display: false } }, 
+                            scales: { 
+                                x: { display: false }, 
+                                y: { position: 'right', grid: { color: '#1e222d' }, ticks: { color: '#434651', font: { size: 9 } } } 
+                            } 
+                        }
                     });
                 });
             }
@@ -202,10 +259,11 @@
                 for (let j = 0; j < points.length - 1; j++) {
                     if (points[j].x <= targetX && points[j+1].x >= targetX) { left = points[j]; right = points[j+1]; break; }
                 }
-                const y = left.y + ((targetX - left.x) / (right.x - left.x || 1)) * (right.y - left.y);
+                const ratio = (targetX - left.x) / (right.x - left.x || 1);
+                const y = left.y + ratio * (right.y - left.y);
                 normalizedY.push(y);
             }
-            const minY = Math.min(...normalizedY), range = Math.max(...normalizedY) - minY || 1;
+            const minY = Math.min(...normalizedY), maxY = Math.max(...normalizedY), range = maxY - minY || 1;
             return normalizedY.map(y => 1 - ((y - minY) / range));
         }
     </script>
