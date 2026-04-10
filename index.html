@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全市場選股終端機</title>
+    <title>全市場選股終端機 - 產業強權版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -14,87 +14,109 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #2a2e39; border-radius: 3px; }
         .glass-panel { background: #131722; border: 1px solid #2a2e39; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); }
         .tab-btn.active { background-color: #2962ff; color: white; border-color: #2962ff; }
+        select { appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232962FF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right .7rem top 50%; background-size: .65rem auto; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
     <header class="bg-[#131722] border-b border-[#2a2e39] p-4 flex justify-between items-center z-10">
         <div class="flex items-center space-x-3">
             <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-            <h1 class="text-xl font-bold text-white tracking-wider">AI 智能選股終端機 <span class="text-xs text-blue-400 border border-blue-400 px-2 py-0.5 rounded ml-2">PRO 版</span></h1>
+            <h1 class="text-xl font-bold text-white tracking-wider">AI 智能選股終端機 <span class="text-xs text-blue-400 border border-blue-400 px-2 py-0.5 rounded ml-2">v4 產業強權版</span></h1>
         </div>
     </header>
 
     <main class="flex-1 flex overflow-hidden">
         <section class="w-1/2 p-6 flex flex-col border-r border-[#2a2e39] bg-[#0b0e14]">
             
-            <div class="flex space-x-2 mb-6">
-                <button onclick="switchTab('draw')" id="btn-tab-draw" class="tab-btn active flex-1 py-2 rounded border border-[#2a2e39] text-gray-400 font-semibold transition-colors">🖍️ 手繪型態</button>
-                <button onclick="switchTab('volume')" id="btn-tab-volume" class="tab-btn flex-1 py-2 rounded border border-[#2a2e39] text-gray-400 font-semibold transition-colors">🚀 底部爆量反轉</button>
+            <div class="flex space-x-2 mb-4">
+                <button onclick="switchTab('draw')" id="btn-tab-draw" class="tab-btn active flex-1 py-2 rounded border border-[#2a2e39] text-gray-400 font-semibold transition-colors text-sm">🖍️ 手繪型態</button>
+                <button onclick="switchTab('ai')" id="btn-tab-ai" class="tab-btn flex-1 py-2 rounded border border-[#2a2e39] text-gray-400 font-semibold transition-colors text-sm">🤖 AI 經典辨識</button>
+                <button onclick="switchTab('volume')" id="btn-tab-volume" class="tab-btn flex-1 py-2 rounded border border-[#2a2e39] text-gray-400 font-semibold transition-colors text-sm">🚀 底部爆量</button>
+            </div>
+
+            <div class="mb-6 p-4 bg-[#131722] border border-[#2a2e39] rounded-lg">
+                <label class="text-xs text-gray-400 block mb-2 font-bold uppercase tracking-widest">Target Industry 產業過濾</label>
+                <select id="industrySelect" class="w-full bg-[#1e222d] border border-[#2a2e39] text-white py-2 px-3 rounded text-sm focus:outline-none focus:border-blue-500 cursor-pointer">
+                    <option value="全部">🌐 全部產業 (All Industries)</option>
+                    <option value="半導體業">🔌 半導體業</option>
+                    <option value="電子零組件業">📦 電子零組件業</option>
+                    <option value="光電業">💡 光電業</option>
+                    <option value="通信網路業">📡 通信網路業</option>
+                    <option value="電腦及週邊設備業">💻 電腦週邊</option>
+                    <option value="其他電子業">⚙️ 其他電子業</option>
+                    <option value="電子通路業">🏬 電子通路業</option>
+                    <option value="資訊服務業">☁️ 資訊服務業</option>
+                    <option value="航運業">🚢 航運業</option>
+                    <option value="金融業">💰 金融保險</option>
+                    <option value="鋼鐵工業">🏗️ 鋼鐵工業</option>
+                    <option value="建材營造">🏠 建材營造</option>
+                    <option value="生技醫療業">🧬 生技醫療業</option>
+                </select>
             </div>
 
             <div id="content-draw" class="flex-1 flex flex-col">
-                <div class="mb-4 flex justify-between items-end">
-                    <div>
-                        <h2 class="text-lg font-semibold text-white mb-1">繪製理想型態</h2>
-                        <p class="text-sm text-gray-400">在畫布上畫出走勢，尋找全市場最相似的 K 線。</p>
-                    </div>
-                    <button id="clearBtn" class="px-4 py-2 bg-[#2a2e39] hover:bg-[#434651] text-white rounded text-sm transition-colors">清除重畫</button>
+                <div class="mb-4 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-white">1. 繪製走勢</h2>
+                    <button id="clearBtn" class="px-3 py-1 bg-[#2a2e39] hover:bg-[#434651] text-white rounded text-xs">清除</button>
                 </div>
                 <div class="flex-1 relative rounded-lg overflow-hidden border-2 border-[#2a2e39] bg-[#131722] mb-4">
                     <canvas id="drawCanvas" class="drawing-board w-full h-full block"></canvas>
                 </div>
-                <button onclick="scanDrawing()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-lg transition-colors text-lg">🔍 開始圖形比對</button>
+                <button onclick="scanDrawing()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-lg text-lg transition-all">🔍 執行圖形比對</button>
+            </div>
+
+            <div id="content-ai" class="flex-1 flex flex-col hidden">
+                <h2 class="text-lg font-semibold text-white mb-4">1. 選擇 AI 模板</h2>
+                <select id="aiPatternSelect" class="block w-full bg-[#1e222d] border border-[#2a2e39] text-white py-4 px-4 rounded-lg mb-6 text-lg">
+                    <option value="W_BOTTOM">📈 教科書級 W底</option>
+                    <option value="M_TOP">📉 風險預警 M頭</option>
+                    <option value="V_BOTTOM">⚡ 急跌後 V型反轉</option>
+                    <option value="A_TOP">⚠️ 急漲後 A型反轉</option>
+                </select>
+                <div class="mt-auto">
+                    <button onclick="scanAIPattern()" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded shadow-lg text-lg transition-all">🤖 AI 全市場掃描</button>
+                </div>
             </div>
 
             <div id="content-volume" class="flex-1 flex flex-col hidden">
-                <div class="mb-4">
-                    <h2 class="text-lg font-semibold text-white mb-2">策略說明：底部爆量反轉</h2>
-                    <div class="p-4 bg-[#131722] border border-[#2a2e39] rounded-lg text-sm text-gray-300 space-y-2">
-                        <p>✅ 股價呈現**上漲 (紅K)**。</p>
-                        <p>✅ 今日成交量大於過去 10 日均量的 **2.5 倍**。</p>
-                        <p>✅ 排除成交量極小的冷門股 (大於千張)。</p>
-                        <p class="text-blue-400 mt-2 text-xs">適合尋找：主力剛進場、破底翻、碗公底成型之飆股。</p>
-                    </div>
+                <h2 class="text-lg font-semibold text-white mb-4">1. 確認爆量條件</h2>
+                <div class="p-4 bg-[#131722] border border-[#2a2e39] rounded-lg text-sm text-gray-300 space-y-3 mb-6">
+                    <p>✅ 今日收紅 K 棒</p>
+                    <p>✅ 量能 > 10日均量 2.5 倍</p>
+                    <p>✅ 成交量大於千張 (過濾冷門股)</p>
                 </div>
                 <div class="mt-auto">
-                    <button onclick="scanVolumeSurge()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded shadow-lg transition-colors text-lg">🔥 啟動爆量策略掃描</button>
+                    <button onclick="scanVolumeSurge()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded shadow-lg text-lg transition-all">🔥 啟動爆量策略</button>
                 </div>
             </div>
         </section>
 
         <section class="w-1/2 bg-[#0b0e14] p-6 flex flex-col">
-            <h2 class="text-lg font-semibold text-white mb-4 border-b border-[#2a2e39] pb-2">掃描結果</h2>
-
+            <h2 class="text-lg font-semibold text-white mb-4 border-b border-[#2a2e39] pb-2">比對結果</h2>
             <div id="loadingState" class="hidden flex-1 flex flex-col items-center justify-center">
-                <div class="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-                <p class="text-blue-400 animate-pulse text-lg">AI 運算中，請稍候...</p>
+                <div class="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+                <p class="text-blue-400 animate-pulse font-bold">雲端大腦運算中...</p>
             </div>
-
             <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-gray-500">
-                <svg class="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                <p>等待策略執行指令...</p>
+                <p>請先設定策略條件並按下掃描</p>
             </div>
-
             <div id="resultsList" class="flex-1 overflow-y-auto custom-scrollbar pr-2 hidden space-y-4"></div>
         </section>
     </main>
 
     <script>
-        // API 網址設定 (你的 Render 網址)
         const API_BASE_URL = 'https://my-stock-scanner-api.onrender.com/api';
 
-        // --- Tab 切換邏輯 ---
+        // --- UI 控制 ---
         function switchTab(tabName) {
-            document.getElementById('btn-tab-draw').classList.remove('active');
-            document.getElementById('btn-tab-volume').classList.remove('active');
-            document.getElementById('content-draw').classList.add('hidden');
-            document.getElementById('content-volume').classList.add('hidden');
-            
+            ['draw', 'ai', 'volume'].forEach(t => {
+                document.getElementById(`btn-tab-${t}`).classList.remove('active');
+                document.getElementById(`content-${t}`).classList.add('hidden');
+            });
             document.getElementById(`btn-tab-${tabName}`).classList.add('active');
             document.getElementById(`content-${tabName}`).classList.remove('hidden');
         }
 
-        // --- UI 控制 ---
         const loadingState = document.getElementById('loadingState');
         const emptyState = document.getElementById('emptyState');
         const resultsList = document.getElementById('resultsList');
@@ -105,7 +127,7 @@
             loadingState.classList.remove('hidden');
         }
 
-        // --- 策略 1：手繪掃描 ---
+        // --- 手繪邏輯 ---
         const canvas = document.getElementById('drawCanvas');
         const ctx = canvas.getContext('2d');
         let isDrawing = false, points = [];
@@ -144,7 +166,6 @@
         }
 
         document.getElementById('clearBtn').addEventListener('click', () => { points = []; redraw(); });
-        
         canvas.addEventListener('mousedown', startDrawing); canvas.addEventListener('mousemove', draw);
         canvas.addEventListener('mouseup', stopDrawing); canvas.addEventListener('mouseout', stopDrawing);
         canvas.addEventListener("touchstart", startDrawing, { passive: false });
@@ -168,83 +189,102 @@
             return normalizedY.map(y => 1 - ((y - minY) / range));
         }
 
+        // --- API 呼叫 (帶入產業過濾) ---
         async function scanDrawing() {
             const pattern = getNormalizedPattern();
+            const industry = document.getElementById('industrySelect').value;
             if (!pattern) return alert('請先畫出走勢！');
             showLoading();
             try {
                 const res = await fetch(`${API_BASE_URL}/scan`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pattern })
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pattern, industry })
                 });
                 renderResults(await res.json(), 'draw');
             } catch (err) { alert('伺服器連線失敗！'); location.reload(); }
         }
 
-        // --- 策略 2：底部爆量掃描 ---
-        async function scanVolumeSurge() {
+        async function scanAIPattern() {
+            const selectedPattern = document.getElementById('aiPatternSelect').value;
+            const industry = document.getElementById('industrySelect').value;
             showLoading();
             try {
-                const res = await fetch(`${API_BASE_URL}/scan_volume_surge`, { method: 'POST' });
-                renderResults(await res.json(), 'volume');
-            } catch (err) { alert('伺服器連線失敗！'); location.reload(); }
+                const res = await fetch(`${API_BASE_URL}/scan_ai_pattern`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pattern_type: selectedPattern, industry })
+                });
+                renderResults(await res.json(), 'ai');
+            } catch (err) { alert('連線失敗！'); }
         }
 
-        // --- 共用：渲染結果圖表 ---
+        async function scanVolumeSurge() {
+            const industry = document.getElementById('industrySelect').value;
+            showLoading();
+            try {
+                const res = await fetch(`${API_BASE_URL}/scan_volume_surge`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ industry })
+                });
+                renderResults(await res.json(), 'volume');
+            } catch (err) { alert('連線失敗！'); }
+        }
+
+        // --- 渲染結果 ---
         function renderResults(data, type) {
             loadingState.classList.add('hidden');
             resultsList.innerHTML = '';
             
-            if (data.status !== 'success' || data.matches.length === 0) {
-                resultsList.innerHTML = `<div class="text-center text-gray-500 py-10">找不到符合條件的股票</div>`;
+            if (data.status !== 'success' || !data.matches || data.matches.length === 0) {
+                resultsList.innerHTML = `<div class="text-center text-gray-500 py-10">此條件下找不到符合的股票</div>`;
                 resultsList.classList.remove('hidden');
                 return;
             }
 
             data.matches.forEach((stock, index) => {
                 const card = document.createElement('div');
-                card.className = 'glass-panel rounded-lg p-4 transition-transform hover:-translate-y-1 hover:border-[#434651]';
+                card.className = 'glass-panel rounded-lg p-4 transition-all hover:border-[#434651]';
                 
-                // 根據策略決定分數徽章的顯示方式
-                let badgeHtml = '';
-                let lineColor = '#2962ff'; // 預設藍色
-                
+                let badgeHtml = '', lineColor = '#2962ff';
                 if (type === 'draw') {
-                    badgeHtml = `<span class="text-xs text-gray-400 mr-2">相似度</span><span class="text-sm font-bold text-green-400">${stock.score}%</span>`;
+                    badgeHtml = `<span class="text-xs text-gray-400 mr-1">相似度</span><span class="text-sm font-bold text-green-400">${stock.score}%</span>`;
+                } else if (type === 'ai') {
+                    badgeHtml = `<span class="text-xs text-gray-400 mr-1">吻合度</span><span class="text-sm font-bold text-purple-400">${stock.score}%</span>`;
+                    lineColor = '#9333ea';
                 } else if (type === 'volume') {
-                    badgeHtml = `<span class="text-xs text-gray-400 mr-2">爆發</span><span class="text-sm font-bold text-red-500">${stock.score} 倍量</span>`;
-                    lineColor = '#ef4444'; // 爆量策略用紅色線
+                    badgeHtml = `<span class="text-xs text-gray-400 mr-1">爆發</span><span class="text-sm font-bold text-red-500">${stock.score}x</span>`;
+                    lineColor = '#ef4444';
                 }
 
                 card.innerHTML = `
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="flex items-baseline space-x-2">
-                            <span class="text-lg font-bold text-white">${stock.code}</span>
-                            <span class="text-sm text-gray-400">${stock.name}</span>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg font-bold text-white">${stock.code}</span>
+                                <span class="text-sm text-blue-400 font-bold">${stock.name}</span>
+                            </div>
+                            <div class="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter">${stock.industry}</div>
                         </div>
-                        <div class="flex items-center bg-[#1e222d] px-3 py-1 rounded-full border border-[#2a2e39]">
+                        <div class="flex items-center bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">
                             ${badgeHtml}
                         </div>
                     </div>
-                    <div class="h-32 w-full relative"><canvas id="chart-${type}-${index}"></canvas></div>
-                    <div class="mt-3 flex justify-end">
-                        <span class="text-xs text-gray-400">最新收盤價: <span class="text-white">$${stock.prices[stock.prices.length-1].toFixed(2)}</span></span>
-                    </div>
+                    <div class="h-32 w-full relative mb-2"><canvas id="chart-${type}-${index}"></canvas></div>
+                    <div class="text-[11px] text-right text-gray-400">目前收盤: <span class="text-white font-mono">$${stock.prices[stock.prices.length-1].toFixed(2)}</span></div>
                 `;
                 resultsList.appendChild(card);
                 
-                // 畫圖
                 const ctx = document.getElementById(`chart-${type}-${index}`).getContext('2d');
                 new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: Array.from({length: 60}, (_, i) => i),
                         datasets: [{
-                            data: stock.prices, borderColor: lineColor, borderWidth: 2, pointRadius: 0, tension: 0.1
+                            data: stock.prices, borderColor: lineColor, borderWidth: 2, pointRadius: 0, tension: 0.1, fill: false
                         }]
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                        scales: { x: { display: false }, y: { display: true, position: 'right', grid: { color: '#1e222d' } } }
+                        scales: { x: { display: false }, y: { display: true, position: 'right', grid: { color: '#1e222d' }, ticks: { font: { size: 9 } } } }
                     }
                 });
             });
