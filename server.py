@@ -39,7 +39,7 @@ async def scan_pattern(request: Request):
     results.sort(key=lambda x: x["score"], reverse=True)
     return {"status": "success", "matches": results[:10]}
 
-@app.post("/api/scan_volume_surge")
+@app.post("/scan_volume_surge")
 async def scan_volume_surge(request: Request):
     data = await request.json()
     industry = data.get("industry", "全部")
