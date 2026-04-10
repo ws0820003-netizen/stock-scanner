@@ -15,20 +15,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ==========================================
-# 🔑 這裡要貼上你的大冰箱鑰匙 (記得換成真實密碼)
-# ==========================================
-import os
 MONGO_URI = os.environ.get("MONGO_URI")
 
 print("🔌 正在連線至雲端大冰箱...")
+# 帶上 certifi 憑證，確保 Render 不會被擋
 client = MongoClient(MONGO_URI, server_api=ServerApi('1'), tlsCAFile=certifi.where())
 db = client['StockScanner']
 collection = db['StockData']
 print("✅ 冰箱連線成功！")
 
 # ==========================================
-# 🧠 AI 比對核心 API (直接開冰箱拿資料)
+# 引擎 1：手繪型態比對 API
 # ==========================================
 @app.post("/api/scan")
 async def scan_pattern(request: Request):
@@ -36,35 +33,75 @@ async def scan_pattern(request: Request):
     user_pattern = data.get("pattern", [])
     
     if not user_pattern or len(user_pattern) != 60:
-        return {"status": "error", "message": "圖形資料不正確或點數不符"}
+        return {"status": "error", "message": "圖形資料不正確"}
 
-    # 💡 絕招：直接從冰箱把所有股票拿出來 (耗時極短)
     try:
         all_stocks = list(collection.find({}, {"_id": 0})) 
     except Exception as e:
         return {"status": "error", "message": f"讀取冰箱失敗：{e}"}
     
-    if not all_stocks:
-         return {"status": "error", "message": "冰箱裡沒有資料！請確認進貨腳本是否有成功執行。"}
-
     results = []
     for stock in all_stocks:
         stock_norm = stock.get("norm", [])
-        # 防呆：確保資料完整才計算
         if len(stock_norm) == 60:
             total_error = sum(abs(a - b) for a, b in zip(user_pattern, stock_norm))
             score = max(0, 100 - (total_error * 2.5))
-            
             results.append({
-                "code": stock["ticker"].split('.')[0], # 去掉 .TW 或 .TWO
+                "code": stock["ticker"].split('.')[0],
                 "name": stock["ticker"],
                 "score": round(score, 1),
                 "prices": stock["raw"]
             })
 
-    # 排序並取出前 10 名
     results.sort(key=lambda x: x["score"], reverse=True)
     return {"status": "success", "matches": results[:10]}
+
+# ==========================================
+# 引擎 2：底部爆量反轉 API
+# ==========================================
+@app.post("/api/scan_volume_surge")
+async def scan_volume_surge():
+    try:
+        all_stocks = list(collection.find({}, {"_id": 0})) 
+    except Exception as e:
+        return {"status": "error", "message": f"讀取冰箱失敗：{e}"}
+        
+    results = []
+    
+    for stock in all_stocks:
+        prices = stock.get("raw", [])
+        volumes = stock.get("volume", [])
+        
+        if len(prices) < 60 or len(volumes) < 60:
+            continue
+            
+        today_vol = volumes[-1]
+        today_price = prices[-1]
+        yesterday_price = prices[-2]
+        
+        # 過去 10 天平均成交量 (窒息量基準)
+        avg_vol_10d = sum(volumes[-11:-1]) / 10 if sum(volumes[-11:-1]) > 0 else 1
+        
+        # 策略邏輯：
+        # 1. 股價上漲 (紅K)
+        # 2. 今天成交量是過去10天均量的 2.5 倍以上
+        # 3. 今天成交量大於 1000 張 (1,000,000 股)
+        is_price_up = today_price > yesterday_price
+        is_vol_surge = today_vol > (avg_vol_10d * 2.5)
+        is_enough_vol = today_vol > 1000000 
+        
+        if is_price_up and is_vol_surge and is_enough_vol:
+            surge_ratio = round(today_vol / avg_vol_10d, 1)
+            results.append({
+                "code": stock["ticker"].split('.')[0],
+                "name": stock["ticker"],
+                "score": surge_ratio, # 這裡是放大的倍數
+                "prices": prices
+            })
+
+    # 依照爆發倍數排序
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return {"status": "success", "matches": results[:15]}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
