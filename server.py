@@ -14,7 +14,7 @@ client = MongoClient(MONGO_URI, server_api=ServerApi('1'), tlsCAFile=certifi.whe
 db = client['StockScanner']
 collection = db['StockData']
 
-@app.post("/api/scan")
+@app.post("/scan")
 async def scan_pattern(request: Request):
     data = await request.json()
     user_pattern = data.get("pattern", [])
