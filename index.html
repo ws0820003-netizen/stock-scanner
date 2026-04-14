@@ -2,13 +2,14 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI 智能選股終端機 v4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #0b0e14; color: #d1d4dc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        canvas.drawing-board { cursor: crosshair; background-color: #131722; touch-action: none; border-radius: 12px; }
+        body { background-color: #0b0e14; color: #d1d4dc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overscroll-behavior-y: none; }
+        /* 強化手機端防滾動設定 */
+        canvas.drawing-board { cursor: crosshair; background-color: #131722; touch-action: none; border-radius: 12px; -webkit-user-select: none; user-select: none; }
         .tab-btn { border: 1px solid #2a2e39; color: #787b86; }
         .tab-btn.active { background-color: #2962ff; color: white; border-color: #2962ff; }
         .glass-panel { background: #131722; border: 1px solid #2a2e39; transition: all 0.2s; }
@@ -19,7 +20,7 @@
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden">
-    <header class="p-4 bg-[#131722] border-b border-[#2a2e39] flex justify-between items-center shadow-xl">
+    <header class="p-4 bg-[#131722] border-b border-[#2a2e39] flex justify-between items-center shadow-xl z-20">
         <div class="flex items-center">
             <span class="text-2xl mr-2">📈</span>
             <h1 class="text-xl font-bold tracking-tight">AI 智能選股終端機 <span class="text-xs text-blue-500 font-normal ml-2">v4.1 Pro</span></h1>
@@ -29,14 +30,14 @@
         </div>
     </header>
 
-    <main class="flex-1 flex overflow-hidden">
-        <section class="w-full md:w-1/2 p-6 flex flex-col border-r border-[#2a2e39] bg-[#0b0e14] z-10 shadow-2xl">
-            <div class="flex space-x-2 mb-6">
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <section class="w-full md:w-1/2 p-4 md:p-6 flex flex-col border-r border-[#2a2e39] bg-[#0b0e14] z-10 shadow-2xl overflow-y-auto">
+            <div class="flex space-x-2 mb-4 md:mb-6 shrink-0">
                 <button onclick="switchTab('draw')" id="btn-tab-draw" class="tab-btn active flex-1 py-3 rounded-lg font-bold transition-all">🖍️ 手繪型態</button>
                 <button onclick="switchTab('volume')" id="btn-tab-volume" class="tab-btn flex-1 py-3 rounded-lg font-bold transition-all">🚀 底部爆量</button>
             </div>
 
-            <div class="mb-6 p-4 bg-[#131722] rounded-xl border border-[#2a2e39]">
+            <div class="mb-4 md:mb-6 p-4 bg-[#131722] rounded-xl border border-[#2a2e39] shrink-0">
                 <label class="text-[11px] text-blue-400 block mb-2 font-black uppercase tracking-widest">Industry Filter 產業過濾</label>
                 <div class="relative">
                     <select id="industrySelect">
@@ -58,33 +59,33 @@
                 </div>
             </div>
 
-            <div id="content-draw" class="flex-1 flex flex-col">
-                <div class="mb-2 flex justify-between items-end">
+            <div id="content-draw" class="flex-1 flex flex-col min-h-[300px]">
+                <div class="mb-2 flex justify-between items-end shrink-0">
                     <span class="text-sm font-bold text-[#787b86]">繪製預期走勢 (K線 60日)：</span>
                     <button id="clearBtn" class="text-xs text-red-400 hover:text-red-300 transition-colors font-bold uppercase">Clear 清除</button>
                 </div>
-                <div class="flex-1 mb-6 relative">
-                    <canvas id="drawCanvas" class="drawing-board w-full h-full shadow-inner border border-[#2a2e39]"></canvas>
+                <div class="flex-1 mb-4 relative min-h-[200px]">
+                    <canvas id="drawCanvas" class="drawing-board absolute inset-0 w-full h-full shadow-inner border border-[#2a2e39]"></canvas>
                 </div>
-                <button onclick="scanDrawing()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg shadow-blue-900/20">🔍 執行全市場形態比對</button>
+                <button onclick="scanDrawing()" class="shrink-0 w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg shadow-blue-900/20">🔍 執行全市場形態比對</button>
             </div>
 
             <div id="content-volume" class="flex-1 flex flex-col hidden">
-                <div class="p-8 bg-[#131722] rounded-2xl border border-[#2a2e39] mb-6 shadow-2xl relative overflow-hidden">
+                <div class="p-6 md:p-8 bg-[#131722] rounded-2xl border border-[#2a2e39] mb-6 shadow-2xl relative overflow-hidden shrink-0">
                     <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">📊</div>
                     <h2 class="text-xl font-bold mb-6 text-red-500 flex items-center">🔥 爆量反轉選股策略</h2>
-                    <ul class="space-y-4 text-gray-300 font-medium">
+                    <ul class="space-y-4 text-gray-300 font-medium text-sm md:text-base">
                         <li class="flex items-center"><span class="bg-green-500/20 text-green-500 p-1 rounded-full mr-3 text-[10px]">✔</span> 今日收紅 K (收盤 > 昨日)</li>
                         <li class="flex items-center"><span class="bg-green-500/20 text-green-500 p-1 rounded-full mr-3 text-[10px]">✔</span> 成交量 > 10日均量 2.5 倍以上</li>
                         <li class="flex items-center"><span class="bg-green-500/20 text-green-500 p-1 rounded-full mr-3 text-[10px]">✔</span> 單日成交量大於 1,000 張</li>
                     </ul>
                 </div>
-                <button onclick="scanVolumeSurge()" class="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg shadow-red-900/20">🚀 啟動底部爆量掃描</button>
+                <button onclick="scanVolumeSurge()" class="shrink-0 w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg shadow-red-900/20">🚀 啟動底部爆量掃描</button>
             </div>
         </section>
 
-        <section class="hidden md:flex w-1/2 p-6 flex-col bg-[#0b0e14]">
-            <h2 class="text-lg font-bold mb-4 border-b border-[#2a2e39] pb-2 text-white flex justify-between items-center">
+        <section class="w-full md:w-1/2 p-4 md:p-6 flex flex-col bg-[#0b0e14] border-t md:border-t-0 border-[#2a2e39]">
+            <h2 class="text-lg font-bold mb-4 border-b border-[#2a2e39] pb-2 text-white flex justify-between items-center shrink-0">
                 掃描結果 (Matching Results)
                 <span id="resultCount" class="text-xs font-normal text-gray-500"></span>
             </h2>
@@ -99,12 +100,11 @@
                 <p class="text-sm font-bold">請在左側執行掃描指令</p>
             </div>
 
-            <div id="resultsList" class="flex-1 overflow-y-auto space-y-4 hidden pr-2"></div>
+            <div id="resultsList" class="flex-1 overflow-y-auto space-y-4 hidden pr-2 pb-10"></div>
         </section>
     </main>
 
     <script>
-        // 💡 修改重點：確保這行網址與你 Render 後台一致，結尾不要有 /
         const API_BASE_URL = 'https://my-stock-scanner-api.onrender.com'; 
 
         const canvas = document.getElementById('drawCanvas');
@@ -118,41 +118,101 @@
             });
             document.getElementById(`btn-tab-${tabName}`).classList.add('active');
             document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            if(tabName === 'draw') setTimeout(resizeCanvas, 50); // 切換回來時重整畫布
         }
 
+        // 🌟 修正1：Retina 高清畫布與手機 RWD 縮放
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width; canvas.height = rect.height;
-            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+            ctx.scale(dpr, dpr);
+            ctx.lineCap = 'round'; 
+            ctx.lineJoin = 'round';
+            redrawPoints(); // 手機瀏覽器網址列縮放時，保留已畫線條
         }
-        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+        
+        function redrawPoints() {
+            if (points.length === 0) return;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for(let i=1; i<points.length; i++){
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.strokeStyle = '#2962ff'; 
+            ctx.lineWidth = 4; 
+            ctx.stroke();
+        }
 
+        window.addEventListener('resize', resizeCanvas); 
+        setTimeout(resizeCanvas, 100); // 初始載入
+
+        // 🌟 修正2：精準抓取 Touch 與 Mouse 座標
         function getPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
             return { x: clientX - rect.left, y: clientY - rect.top };
         }
 
-        canvas.addEventListener('mousedown', start); canvas.addEventListener('touchstart', start);
-        function start(e) { e.preventDefault(); isDrawing = true; points = [getPos(e)]; ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y); }
+        function start(e) { 
+            e.preventDefault(); 
+            isDrawing = true; 
+            points = [getPos(e)]; 
+            ctx.beginPath(); 
+            ctx.moveTo(points[0].x, points[0].y); 
+        }
         
-        canvas.addEventListener('mousemove', move); canvas.addEventListener('touchmove', move);
         function move(e) {
-            if (!isDrawing) return; e.preventDefault();
+            if (!isDrawing) return; 
+            e.preventDefault(); // 強制阻擋手機滾動
             const pos = getPos(e);
-            if (pos.x > points[points.length-1].x + 2) {
-                points.push(pos); ctx.lineTo(pos.x, pos.y);
-                ctx.strokeStyle = '#2962ff'; ctx.lineWidth = 4; ctx.stroke();
+            
+            // 稍微放寬 X 軸判定，避免手機上畫太慢斷線
+            if (pos.x > points[points.length-1].x) { 
+                points.push(pos); 
+                ctx.lineTo(pos.x, pos.y);
+                ctx.strokeStyle = '#2962ff'; 
+                ctx.lineWidth = 4; 
+                ctx.stroke();
             }
         }
-        window.addEventListener('mouseup', () => isDrawing = false);
-        document.getElementById('clearBtn').addEventListener('click', () => { points = []; ctx.clearRect(0,0,canvas.width,canvas.height); });
+
+        function stop() { isDrawing = false; }
+
+        // 🌟 修正3：綁定 passive: false 確保 e.preventDefault() 生效
+        canvas.addEventListener('mousedown', start); 
+        canvas.addEventListener('touchstart', start, { passive: false });
+        
+        canvas.addEventListener('mousemove', move); 
+        canvas.addEventListener('touchmove', move, { passive: false });
+        
+        window.addEventListener('mouseup', stop);
+        window.addEventListener('touchend', stop);      // 補上離開螢幕事件
+        window.addEventListener('touchcancel', stop);   // 補上系統中斷事件
+
+        document.getElementById('clearBtn').addEventListener('click', () => { 
+            points = []; 
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            resizeCanvas(); // 重置狀態
+        });
 
         async function scanDrawing() {
             const industry = document.getElementById('industrySelect').value;
-            if (points.length < 5) return alert('請先在畫布上畫出一段趨勢！');
-            callAPI('/scan', { pattern: getNormalizedPattern(), industry }, 'draw');
+            const pattern = getNormalizedPattern();
+            if (pattern.length < 5) {
+                alert('請先在畫布上畫出一段完整的趨勢！');
+                return;
+            }
+            callAPI('/scan', { pattern: pattern, industry }, 'draw');
         }
 
         async function scanVolumeSurge() {
@@ -165,7 +225,12 @@
             document.getElementById('resultsList').classList.add('hidden');
             document.getElementById('loadingState').classList.remove('hidden');
             document.getElementById('conn-status').innerText = "Processing...";
-            document.getElementById('conn-status').className = "text-[10px] bg-blue-500/20 text-blue-500 px-2 py-1 rounded-full font-bold";
+            document.getElementById('conn-status').className = "text-[10px] bg-blue-500/20 text-blue-500 px-2 py-1 rounded-full font-bold animate-pulse";
+
+            // 手機版自動往下滾動到結果區 (改善 UX)
+            if (window.innerWidth < 768) {
+                document.getElementById('loadingState').scrollIntoView({ behavior: 'smooth' });
+            }
 
             try {
                 const res = await fetch(API_BASE_URL + endpoint, {
@@ -179,12 +244,14 @@
                 renderResults(data, type);
                 
                 document.getElementById('conn-status').innerText = "System Ready";
-                document.getElementById('conn-status').className = "text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full font-bold";
+                document.getElementById('conn-status').className = "text-[10px] bg-green-500/20 text-green-500 px-2 py-1 rounded-full font-bold uppercase tracking-widest";
             } catch (e) { 
                 console.error(e);
-                alert('連線失敗！請檢查：\n1. Render 網址是否正確\n2. Render 是否已啟動(Live)\n3. 網路連線'); 
+                alert('連線失敗！請檢查：\n1. Render API 網址是否正確\n2. 伺服器是否已啟動(Live)\n3. 網路連線狀態'); 
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('emptyState').classList.remove('hidden');
+                document.getElementById('conn-status').innerText = "Connection Failed";
+                document.getElementById('conn-status').className = "text-[10px] bg-red-500/20 text-red-500 px-2 py-1 rounded-full font-bold";
             }
         }
 
@@ -195,28 +262,31 @@
             
             if (!data.matches || data.matches.length === 0) {
                 list.innerHTML = '<div class="p-10 text-center text-gray-500 font-bold">⚠️ 此過濾條件下找不到符合標的</div>';
+                document.getElementById('resultCount').innerText = "(0)";
             } else {
+                document.getElementById('resultCount').innerText = `(${data.matches.length})`;
                 data.matches.forEach((s, i) => {
                     const card = document.createElement('div');
-                    card.className = 'glass-panel rounded-2xl p-5 shadow-lg';
+                    card.className = 'glass-panel rounded-2xl p-4 md:p-5 shadow-lg';
                     card.innerHTML = `
                         <div class="flex justify-between items-start mb-4">
                             <div>
-                                <div class="flex items-center">
-                                    <span class="text-2xl font-black text-white mr-2">${s.code}</span>
-                                    <span class="text-sm px-2 py-0.5 bg-blue-500/20 text-blue-400 font-bold rounded">${s.name}</span>
+                                <div class="flex items-center flex-wrap gap-2">
+                                    <span class="text-2xl font-black text-white">${s.code}</span>
+                                    <span class="text-xs md:text-sm px-2 py-0.5 bg-blue-500/20 text-blue-400 font-bold rounded">${s.name}</span>
                                 </div>
                                 <div class="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-widest">${s.industry}</div>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right shrink-0">
                                 <div class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">${type==='draw'?'Similarity':'Vol Multiplier'}</div>
-                                <div class="text-lg font-black ${type==='volume'?'text-red-500':'text-green-400'}">${s.score}${type==='draw'?'%':'x'}</div>
+                                <div class="text-lg md:text-xl font-black ${type==='volume'?'text-red-500':'text-green-400'}">${s.score}${type==='draw'?'%':'x'}</div>
                             </div>
                         </div>
-                        <div class="h-32 w-full mb-3"><canvas id="c-${i}"></canvas></div>
+                        <div class="h-24 md:h-32 w-full mb-3"><canvas id="c-${i}"></canvas></div>
                         <div class="flex justify-between items-center text-[10px]">
-                            <span class="text-gray-500 font-bold">60-DAY HISTORICAL TREND</span>
-                            <span class="font-mono text-white bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">LAST CLOSE: $${s.prices[s.prices.length-1].toFixed(2)}</span>
+                            <span class="text-gray-500 font-bold hidden md:inline">60-DAY HISTORICAL TREND</span>
+                            <span class="text-gray-500 font-bold md:hidden">60-DAY TREND</span>
+                            <span class="font-mono text-white bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">LAST: $${s.prices[s.prices.length-1].toFixed(2)}</span>
                         </div>
                     `;
                     list.appendChild(card);
@@ -238,11 +308,12 @@
                         options: { 
                             responsive: true, 
                             maintainAspectRatio: false, 
-                            plugins: { legend: { display: false } }, 
+                            plugins: { legend: { display: false }, tooltip: { enabled: false } }, 
                             scales: { 
                                 x: { display: false }, 
-                                y: { position: 'right', grid: { color: '#1e222d' }, ticks: { color: '#434651', font: { size: 9 } } } 
-                            } 
+                                y: { position: 'right', grid: { color: '#1e222d' }, ticks: { color: '#434651', font: { size: 9 }, maxTicksLimit: 5 } } 
+                            },
+                            interaction: { mode: 'index', intersect: false }
                         }
                     });
                 });
@@ -250,8 +321,12 @@
             list.classList.remove('hidden');
         }
 
+        // 🌟 修正4：強化數學演算法，避免手機上點擊不連續造成的除以零錯誤
         function getNormalizedPattern() {
+            if (points.length < 2) return [];
             const minX = points[0].x, maxX = points[points.length-1].x, width = maxX - minX;
+            if (width <= 0) return []; // 避免使用者只單點一下造成除以零
+            
             const normalizedY = [];
             for (let i = 0; i < 60; i++) {
                 const targetX = minX + (width * i / 59);
@@ -259,7 +334,8 @@
                 for (let j = 0; j < points.length - 1; j++) {
                     if (points[j].x <= targetX && points[j+1].x >= targetX) { left = points[j]; right = points[j+1]; break; }
                 }
-                const ratio = (targetX - left.x) / (right.x - left.x || 1);
+                const dx = right.x - left.x;
+                const ratio = dx === 0 ? 0 : (targetX - left.x) / dx;
                 const y = left.y + ratio * (right.y - left.y);
                 normalizedY.push(y);
             }
