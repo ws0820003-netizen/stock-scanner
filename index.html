@@ -6,6 +6,7 @@
     <title>AI 智能選股終端機 v4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
     <style>
         body { background-color: #0b0e14; color: #d1d4dc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overscroll-behavior-y: none; }
         canvas.drawing-board { cursor: crosshair; background-color: #131722; touch-action: none; border-radius: 12px; -webkit-user-select: none; user-select: none; }
@@ -39,6 +40,7 @@
             <div class="flex space-x-2 mb-4 md:mb-6 shrink-0">
                 <button onclick="switchTab('draw')" id="btn-tab-draw" class="tab-btn active flex-1 py-3 rounded-lg font-bold transition-all">🖍️ 手繪型態</button>
                 <button onclick="switchTab('volume')" id="btn-tab-volume" class="tab-btn flex-1 py-3 rounded-lg font-bold transition-all">🚀 底部爆量</button>
+                <button onclick="switchTab('fvg')" id="btn-tab-fvg" class="tab-btn flex-1 py-3 rounded-lg font-bold transition-all">🎯 FVG缺口</button>
             </div>
 
             <div class="mb-4 md:mb-6 p-4 bg-[#131722] rounded-xl border border-[#2a2e39] shrink-0">
@@ -86,6 +88,22 @@
                 </div>
                 <button onclick="scanVolumeSurge()" class="shrink-0 w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg shadow-red-900/20">🚀 啟動底部爆量掃描</button>
             </div>
+
+            <div id="content-fvg" class="flex-1 flex flex-col hidden">
+                <div class="p-6 md:p-8 bg-[#131722] rounded-2xl border border-[#2a2e39] mb-6 shadow-2xl relative overflow-hidden shrink-0">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">🎯</div>
+                    <h2 class="text-xl font-bold mb-4 text-yellow-400 flex items-center">⚡ FVG + OTE 缺口共振</h2>
+                    <ul class="space-y-3 text-gray-300 font-medium text-sm md:text-base">
+                        <li class="flex items-center"><span class="bg-yellow-500/20 text-yellow-400 p-1 rounded-full mr-3 text-[10px]">✔</span> 收盤 &gt; MA60（大趨勢向上）</li>
+                        <li class="flex items-center"><span class="bg-yellow-500/20 text-yellow-400 p-1 rounded-full mr-3 text-[10px]">✔</span> 進場前 22 日線性斜率 &gt; 0.3%/天</li>
+                        <li class="flex items-center"><span class="bg-yellow-500/20 text-yellow-400 p-1 rounded-full mr-3 text-[10px]">✔</span> FVG 爆量缺口（D2 量 &gt; D1 量 1.5 倍）</li>
+                        <li class="flex items-center"><span class="bg-yellow-500/20 text-yellow-400 p-1 rounded-full mr-3 text-[10px]">✔</span> 回測至 OTE 區間（50~70% 回撤）</li>
+                        <li class="flex items-center"><span class="bg-yellow-500/20 text-yellow-400 p-1 rounded-full mr-3 text-[10px]">✔</span> 淺回測（今日低點在缺口上半段）</li>
+                    </ul>
+                    <div id="fvg-scan-date" class="mt-4 text-[10px] text-gray-600 font-bold uppercase tracking-widest"></div>
+                </div>
+                <button onclick="scanFVG()" class="shrink-0 w-full py-4 bg-yellow-600 hover:bg-yellow-500 text-white font-black rounded-xl shadow-lg transform active:scale-95 transition-all text-lg shadow-yellow-900/20">🎯 載入今日 FVG 掃描結果</button>
+            </div>
         </section>
 
         <section class="w-full md:w-1/2 p-4 md:p-6 flex flex-col bg-[#0b0e14] border-t md:border-t-0 border-[#2a2e39] shrink-0 md:shrink md:overflow-y-auto">
@@ -116,13 +134,13 @@
         let isDrawing = false, points = [];
 
         function switchTab(tabName) {
-            ['draw', 'volume'].forEach(t => {
+            ['draw', 'volume', 'fvg'].forEach(t => {
                 document.getElementById(`btn-tab-${t}`).classList.remove('active');
                 document.getElementById(`content-${t}`).classList.add('hidden');
             });
             document.getElementById(`btn-tab-${tabName}`).classList.add('active');
             document.getElementById(`content-${tabName}`).classList.remove('hidden');
-            if(tabName === 'draw') setTimeout(resizeCanvas, 50); 
+            if(tabName === 'draw') setTimeout(resizeCanvas, 50);
         }
 
         function resizeCanvas() {
@@ -217,6 +235,10 @@
             callAPI('/scan_volume_surge', { industry }, 'volume');
         }
 
+        async function scanFVG() {
+            callAPI('/scan_fvg', {}, 'fvg');
+        }
+
         async function callAPI(endpoint, body, type) {
             document.getElementById('emptyState').classList.add('hidden');
             document.getElementById('resultsList').classList.add('hidden');
@@ -256,59 +278,136 @@
             document.getElementById('loadingState').classList.add('hidden');
             const list = document.getElementById('resultsList');
             list.innerHTML = '';
-            
+
+            // FVG Tab：顯示掃描日期
+            if (type === 'fvg' && data.scan_date) {
+                document.getElementById('fvg-scan-date').innerText = `掃描日期：${data.scan_date}`;
+            }
+
             if (!data.matches || data.matches.length === 0) {
-                list.innerHTML = '<div class="p-10 text-center text-gray-500 font-bold">⚠️ 此過濾條件下找不到符合標的</div>';
+                const emptyMsg = type === 'fvg'
+                    ? '⚠️ 今日尚無 FVG 掃描結果，請先執行 strategy_FVG_fi.py'
+                    : '⚠️ 此過濾條件下找不到符合標的';
+                list.innerHTML = `<div class="p-10 text-center text-gray-500 font-bold">${emptyMsg}</div>`;
                 document.getElementById('resultCount').innerText = "(0)";
             } else {
                 document.getElementById('resultCount').innerText = `(${data.matches.length})`;
                 data.matches.forEach((s, i) => {
                     const card = document.createElement('div');
                     card.className = 'glass-panel rounded-2xl p-4 md:p-5 shadow-lg';
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <div class="flex items-center flex-wrap gap-2">
-                                    <span class="text-2xl font-black text-white">${s.code}</span>
-                                    <span class="text-xs md:text-sm px-2 py-0.5 bg-blue-500/20 text-blue-400 font-bold rounded">${s.name}</span>
+
+                    if (type === 'fvg') {
+                        const retestBadge = s.retest === '淺'
+                            ? '<span class="bg-yellow-500/20 text-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded">🟡 淺回測</span>'
+                            : '<span class="bg-orange-500/20 text-orange-400 text-[10px] font-bold px-2 py-0.5 rounded">🟠 深回測</span>';
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <div class="flex items-center flex-wrap gap-2">
+                                        <span class="text-2xl font-black text-white">${s.code}</span>
+                                        <span class="text-xs md:text-sm px-2 py-0.5 bg-yellow-500/20 text-yellow-400 font-bold rounded">${s.name}</span>
+                                        ${retestBadge}
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-widest">${s.industry}</div>
                                 </div>
-                                <div class="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-widest">${s.industry}</div>
+                                <div class="text-right shrink-0">
+                                    <div class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Vol Ratio</div>
+                                    <div class="text-lg md:text-xl font-black text-yellow-400">${s.vol_ratio}x</div>
+                                </div>
                             </div>
-                            <div class="text-right shrink-0">
-                                <div class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">${type==='draw'?'Similarity':'Vol Multiplier'}</div>
-                                <div class="text-lg md:text-xl font-black ${type==='volume'?'text-red-500':'text-green-400'}">${s.score}${type==='draw'?'%':'x'}</div>
+                            <div class="grid grid-cols-3 gap-2 mb-3 text-[11px]">
+                                <div class="bg-[#1e222d] rounded-lg p-2 text-center">
+                                    <div class="text-gray-500 font-bold">收盤</div>
+                                    <div class="text-white font-black">${s.close}</div>
+                                </div>
+                                <div class="bg-green-900/30 rounded-lg p-2 text-center border border-green-800/40">
+                                    <div class="text-green-500 font-bold">缺口上緣</div>
+                                    <div class="text-green-400 font-black">${s.gap_top}</div>
+                                </div>
+                                <div class="bg-red-900/30 rounded-lg p-2 text-center border border-red-800/40">
+                                    <div class="text-red-500 font-bold">🛡️ 防守</div>
+                                    <div class="text-red-400 font-black">${s.gap_bottom}</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="h-24 md:h-32 w-full mb-3"><canvas id="c-${i}"></canvas></div>
-                        <div class="flex justify-between items-center text-[10px]">
-                            <span class="text-gray-500 font-bold hidden md:inline">60-DAY HISTORICAL TREND</span>
-                            <span class="text-gray-500 font-bold md:hidden">60-DAY TREND</span>
-                            <span class="font-mono text-white bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">LAST: $${s.prices[s.prices.length-1].toFixed(2)}</span>
-                        </div>
-                    `;
+                            <div class="mb-3 text-[10px] text-gray-500 font-bold">OTE 區間：<span class="text-yellow-400">${s.ote_zone}</span>　MA60：<span class="text-blue-400">${s.ma60}</span>　5日均量：<span class="text-gray-400">${s.avg_vol_5d}萬</span></div>
+                            <div class="h-24 md:h-32 w-full mb-2 relative"><canvas id="c-${i}"></canvas></div>
+                            <div class="flex justify-between items-center text-[10px]">
+                                <span class="text-gray-500 font-bold">60-DAY TREND + FVG ZONE</span>
+                                <span class="font-mono text-white bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">LAST: $${s.close}</span>
+                            </div>
+                        `;
+                    } else {
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <div class="flex items-center flex-wrap gap-2">
+                                        <span class="text-2xl font-black text-white">${s.code}</span>
+                                        <span class="text-xs md:text-sm px-2 py-0.5 bg-blue-500/20 text-blue-400 font-bold rounded">${s.name}</span>
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 mt-1 uppercase font-bold tracking-widest">${s.industry}</div>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <div class="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">${type==='draw'?'Similarity':'Vol Multiplier'}</div>
+                                    <div class="text-lg md:text-xl font-black ${type==='volume'?'text-red-500':'text-green-400'}">${s.score}${type==='draw'?'%':'x'}</div>
+                                </div>
+                            </div>
+                            <div class="h-24 md:h-32 w-full mb-3"><canvas id="c-${i}"></canvas></div>
+                            <div class="flex justify-between items-center text-[10px]">
+                                <span class="text-gray-500 font-bold hidden md:inline">60-DAY HISTORICAL TREND</span>
+                                <span class="text-gray-500 font-bold md:hidden">60-DAY TREND</span>
+                                <span class="font-mono text-white bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">LAST: $${s.prices[s.prices.length-1].toFixed(2)}</span>
+                            </div>
+                        `;
+                    }
                     list.appendChild(card);
-                    
+
+                    // 畫折線圖
+                    const prices = type === 'fvg' ? s.prices : s.prices;
+                    const borderColor = type === 'fvg' ? '#f59e0b' : (type === 'volume' ? '#ef4444' : '#2962ff');
+                    const bgColor    = type === 'fvg' ? 'rgba(245,158,11,0.05)' : (type === 'volume' ? 'rgba(239,68,68,0.05)' : 'rgba(41,98,255,0.05)');
+
+                    // FVG 額外畫缺口區間標示線
+                    const annotations = {};
+                    if (type === 'fvg' && prices.length > 0) {
+                        annotations.gapTop = {
+                            type: 'line', yMin: s.gap_top, yMax: s.gap_top,
+                            borderColor: 'rgba(34,197,94,0.7)', borderWidth: 1.5, borderDash: [4,3],
+                        };
+                        annotations.gapBottom = {
+                            type: 'line', yMin: s.gap_bottom, yMax: s.gap_bottom,
+                            borderColor: 'rgba(239,68,68,0.7)', borderWidth: 1.5, borderDash: [4,3],
+                        };
+                        annotations.ma60 = {
+                            type: 'line', yMin: s.ma60, yMax: s.ma60,
+                            borderColor: 'rgba(99,102,241,0.5)', borderWidth: 1, borderDash: [2,4],
+                        };
+                    }
+
                     new Chart(document.getElementById(`c-${i}`), {
                         type: 'line',
-                        data: { 
-                            labels: s.prices.map((_,idx)=>idx), 
-                            datasets: [{ 
-                                data: s.prices, 
-                                borderColor: type==='volume'?'#ef4444':'#2962ff', 
-                                borderWidth: 2.5, 
-                                pointRadius: 0, 
+                        data: {
+                            labels: prices.map((_,idx)=>idx),
+                            datasets: [{
+                                data: prices,
+                                borderColor: borderColor,
+                                borderWidth: 2.5,
+                                pointRadius: 0,
                                 fill: true,
-                                backgroundColor: type==='volume'?'rgba(239, 68, 68, 0.05)':'rgba(41, 98, 255, 0.05)',
-                                tension: 0.1 
-                            }] 
+                                backgroundColor: bgColor,
+                                tension: 0.1
+                            }]
                         },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            plugins: { legend: { display: false }, tooltip: { enabled: false } }, 
-                            scales: { 
-                                x: { display: false }, 
-                                y: { position: 'right', grid: { color: '#1e222d' }, ticks: { color: '#434651', font: { size: 9 }, maxTicksLimit: 5 } } 
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { enabled: false },
+                                annotation: Object.keys(annotations).length ? { annotations } : undefined,
+                            },
+                            scales: {
+                                x: { display: false },
+                                y: { position: 'right', grid: { color: '#1e222d' }, ticks: { color: '#434651', font: { size: 9 }, maxTicksLimit: 5 } }
                             },
                             interaction: { mode: 'index', intersect: false }
                         }
